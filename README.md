@@ -1,10 +1,10 @@
-# 📋 Todo API — RESTful API Server
+# Todo API — RESTful API Server
 
 > ระบบ RESTful API สำหรับแอปพลิเคชัน Todo List พัฒนาด้วย **AdonisJS 5** (TypeScript) ร่วมกับ **Lucid ORM** และ **PostgreSQL 16** ตามข้อกำหนดการส่งงานแบบทดสอบ
 
 ---
 
-## 🌟 จุดเด่นของระบบ (Key Features)
+## จุดเด่นของระบบ (Key Features)
 
 - **RESTful API เต็มรูปแบบ**: รองรับการสร้าง (Create), อ่านทั้งหมด/รายตัว (Read), แก้ไขชื่อ/สถานะ (Update), และลบ (Delete)
 - **Database & Indexing**: ใช้ PostgreSQL 16 พร้อมระบบ Migrations ของ Lucid ORM และมีการทำ **Database Index บนคอลัมน์ `completed`** เพื่อการสืบค้นและกรองข้อมูลที่รวดเร็ว
@@ -15,7 +15,7 @@
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Framework**: [AdonisJS 5](https://adonisjs.com/) (`@adonisjs/core: ^5.9.0`)
 - **Language**: [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
@@ -26,7 +26,7 @@
 
 ---
 
-## 📁 โครงสร้างโปรเจกต์ (Project Structure)
+## โครงสร้างโปรเจกต์ (Project Structure)
 
 ```text
 todo-backend/
@@ -53,7 +53,7 @@ todo-backend/
 
 ---
 
-## 🚀 วิธีการเริ่มต้นใช้งาน (Getting Started)
+## วิธีการเริ่มต้นใช้งาน (Getting Started)
 
 เลือกวิธีการรันได้ 2 รูปแบบตามความสะดวก:
 
@@ -162,7 +162,7 @@ npm run dev
 
 ---
 
-## 🧪 การทดสอบอัตโนมัติ (Automated Testing with Postman)
+## การทดสอบอัตโนมัติ (Automated Testing with Postman)
 
 โปรเจกต์นี้มาพร้อมชุดทดสอบ Postman Collection ที่ตั้งค่า Assertions ครอบคลุมทุกกรณีทั้ง Success Cases, Edge Cases, และ Validation Errors อยู่ที่โฟลเดอร์:
 `postman/Todo-API.postman_collection.json`
@@ -180,7 +180,7 @@ npx newman run postman/Todo-API.postman_collection.json --env-var "baseUrl=http:
 
 ---
 
-## ⚙️ Environment Variables Reference
+## Environment Variables Reference
 
 | ตัวแปร | ค่าตัวอย่าง | คำอธิบาย |
 | :--- | :---: | :--- |

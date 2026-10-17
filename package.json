@@ -1,0 +1,44 @@
+{
+  "name": "todo-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RESTful API for the Todo List application (AdonisJS 5 + Lucid + PostgreSQL)",
+  "scripts": {
+    "dev": "node ace serve --watch",
+    "build": "node ace build --production",
+    "start": "node server.js",
+    "migrate": "node ace migration:run",
+    "migrate:rollback": "node ace migration:rollback",
+    "seed": "node ace db:seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@adonisjs/assembler": "^5.9.6",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^16.18.126",
+    "@types/proxy-addr": "^2.0.3",
+    "@types/source-map-support": "^0.5.10",
+    "adonis-preset-ts": "^2.1.0",
+    "pino-pretty": "^10.3.1",
+    "prettier": "^3.3.3",
+    "typescript": "~4.9.5",
+    "youch": "^3.3.4",
+    "youch-terminal": "^2.2.3"
+  },
+  "dependencies": {
+    "@adonisjs/core": "^5.9.0",
+    "@adonisjs/lucid": "^18.4.2",
+    "@adonisjs/repl": "^3.1.11",
+    "luxon": "^3.5.0",
+    "pg": "^8.13.0",
+    "proxy-addr": "^2.0.7",
+    "reflect-metadata": "^0.1.14",
+    "source-map-support": "^0.5.21"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 100
+  }
+}

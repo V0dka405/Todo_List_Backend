@@ -1,0 +1,856 @@
+{
+  "info": {
+    "name": "Todo API",
+    "description": "CRUD tests for the Todo RESTful API (AdonisJS 5 + PostgreSQL).\n\nRun the whole collection in order (Collection Runner or `newman`). Requests chain through the `todoId` variable, so run them in sequence on a migrated database.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3333",
+      "type": "string"
+    },
+    {
+      "key": "todoId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "pm.test('API and database are healthy', () => pm.expect(pm.response.json().healthy).to.eql(true));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Verifies that the API is up and can reach the database."
+      },
+      "response": []
+    },
+    {
+      "name": "Root endpoint",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const res = pm.response.json();",
+              "pm.test('API reports name and ok status', () => {",
+              "  pm.expect(res.name).to.eql('Todo API');",
+              "  pm.expect(res.status).to.eql('ok');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "Verifies that the API root endpoint responds with service name and status."
+      },
+      "response": []
+    },
+    {
+      "name": "1. Create todo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todo = pm.response.json();",
+              "pm.test('Todo has the expected fields', () => {",
+              "  pm.expect(todo).to.include.keys('id', 'title', 'completed', 'createdAt', 'updatedAt');",
+              "  pm.expect(todo.id).to.be.a('number');",
+              "  pm.expect(todo.title).to.be.a('string');",
+              "  pm.expect(todo.completed).to.be.a('boolean');",
+              "});",
+              "pm.test('Title is trimmed and todo starts uncompleted', () => {",
+              "  pm.expect(todo.title).to.eql('Buy milk');",
+              "  pm.expect(todo.completed).to.eql(false);",
+              "});",
+              "pm.collectionVariables.set('todoId', todo.id);",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ]
+        },
+        "description": "Create (C). The title is trimmed by the server. Saves the new id in the `todoId` collection variable for the next requests.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"  Buy milk  \"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Create todo - empty title is rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const body = pm.response.json();",
+              "pm.test('Error body describes the validation failure', () => {",
+              "  pm.expect(body.code).to.eql('E_VALIDATION_FAILURE');",
+              "  pm.expect(body.message).to.be.a('string');",
+              "});",
+              "pm.test('Error points at the \"title\" field', () => {",
+              "  pm.expect(body.errors.map((e) => e.field)).to.include('title');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ]
+        },
+        "description": "Whitespace-only titles fail validation.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"   \"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Create todo - missing title is rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const body = pm.response.json();",
+              "pm.test('Error body describes the validation failure', () => {",
+              "  pm.expect(body.code).to.eql('E_VALIDATION_FAILURE');",
+              "  pm.expect(body.message).to.be.a('string');",
+              "});",
+              "pm.test('Error points at the \"title\" field', () => {",
+              "  pm.expect(body.errors.map((e) => e.field)).to.include('title');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. List todos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todos = pm.response.json();",
+              "pm.test('Body is an array', () => pm.expect(todos).to.be.an('array'));",
+              "pm.test('List contains the todo created earlier', () => {",
+              "  const id = Number(pm.collectionVariables.get('todoId'));",
+              "  pm.expect(todos.map((t) => t.id)).to.include(id);",
+              "});",
+              "pm.test('Newest todo comes first', () => {",
+              "  const ids = todos.map((t) => t.id);",
+              "  pm.expect(ids).to.eql([...ids].sort((a, b) => b - a));",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ]
+        },
+        "description": "Read (R). Returns every todo, newest first."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get todo by id",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todo = pm.response.json();",
+              "pm.test('Todo has the expected fields', () => {",
+              "  pm.expect(todo).to.include.keys('id', 'title', 'completed', 'createdAt', 'updatedAt');",
+              "  pm.expect(todo.id).to.be.a('number');",
+              "  pm.expect(todo.title).to.be.a('string');",
+              "  pm.expect(todo.completed).to.be.a('boolean');",
+              "});",
+              "pm.test('Returns the requested todo', () => {",
+              "  pm.expect(todo.id).to.eql(Number(pm.collectionVariables.get('todoId')));",
+              "  pm.expect(todo.title).to.eql('Buy milk');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "description": "Read (R) a single todo."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Update todo title (PUT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todo = pm.response.json();",
+              "pm.test('Title was updated, completed untouched', () => {",
+              "  pm.expect(todo.title).to.eql('Buy oat milk');",
+              "  pm.expect(todo.completed).to.eql(false);",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "description": "Update (U). PUT and PATCH accept the same partial body.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Buy oat milk\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Mark todo as completed (PATCH)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todo = pm.response.json();",
+              "pm.test('Todo is completed, title untouched', () => {",
+              "  pm.expect(todo.completed).to.eql(true);",
+              "  pm.expect(todo.title).to.eql('Buy oat milk');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "description": "Update (U). Toggles the completed flag.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7b. Update todo title and completed together (PATCH)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const todo = pm.response.json();",
+              "pm.test('Both title and completed were updated simultaneously', () => {",
+              "  pm.expect(todo.title).to.eql('Buy organic oat milk');",
+              "  pm.expect(todo.completed).to.eql(true);",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "description": "Update (U). Updates both title and completed in a single atomic PATCH request.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Buy organic oat milk\",\n  \"completed\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. List completed todos (filter)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "const todos = pm.response.json();",
+              "pm.test('Every returned todo is completed', () => pm.expect(todos.every((t) => t.completed === true)).to.eql(true));",
+              "pm.test('Contains the completed todo', () => pm.expect(todos.map((t) => t.id)).to.include(Number(pm.collectionVariables.get('todoId'))));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos?completed=true",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ],
+          "query": [
+            {
+              "key": "completed",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Optional `completed=true|false` query filter."
+      },
+      "response": []
+    },
+    {
+      "name": "8b. List active todos (filter)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "const todos = pm.response.json();",
+              "pm.test('Body is an array', () => pm.expect(todos).to.be.an('array'));",
+              "pm.test('Every returned todo is active (not completed)', () => pm.expect(todos.every((t) => t.completed === false)).to.eql(true));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos?completed=false",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos"
+          ],
+          "query": [
+            {
+              "key": "completed",
+              "value": "false"
+            }
+          ]
+        },
+        "description": "Optional `completed=false` query filter for active todos."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Update todo - invalid value is rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const body = pm.response.json();",
+              "pm.test('Error body describes the validation failure', () => {",
+              "  pm.expect(body.code).to.eql('E_VALIDATION_FAILURE');",
+              "  pm.expect(body.message).to.be.a('string');",
+              "});",
+              "pm.test('Error points at the \"completed\" field', () => {",
+              "  pm.expect(body.errors.map((e) => e.field)).to.include('completed');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": \"maybe\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Update todo - empty body is rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "const body = pm.response.json();",
+              "pm.test('Error body describes the validation failure', () => {",
+              "  pm.expect(body.code).to.eql('E_VALIDATION_FAILURE');",
+              "  pm.expect(body.message).to.be.a('string');",
+              "});",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11. Delete todo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 204 No Content', () => pm.response.to.have.status(204));",
+              "pm.test('Body is empty', () => pm.expect(pm.response.text()).to.eql(''));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        },
+        "description": "Delete (D). Responds with 204 and no body."
+      },
+      "response": []
+    },
+    {
+      "name": "12. Get deleted todo returns 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404 Not Found', () => pm.response.to.have.status(404));",
+              "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+              "pm.test('Error code is E_ROW_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('E_ROW_NOT_FOUND'));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "13. Delete again returns 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404 Not Found', () => pm.response.to.have.status(404));",
+              "pm.test('Error code is E_ROW_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('E_ROW_NOT_FOUND'));",
+              "pm.test('Response time is under 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/todos/{{todoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "todos",
+            "{{todoId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
